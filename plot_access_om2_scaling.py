@@ -1,7 +1,22 @@
 # plot_access_om2_scaling
 
 import plot_pandas_data as ppd
+import plot_right_axis_years_days as yd
 import matplotlib.pyplot as plt
+
+
+def plot_by_xy_labels_fn(plot_fn, x, data,
+        xticks=[], 
+        yticks=[],
+        right_yticks=[],
+        format_str="{:g}",
+        right_axis_fn=yd.plot_right_axis_yd):
+    return ppd.plot_by_xy_labels_fn(plot_fn, x, data,
+        xticks=xticks,
+        yticks=yticks,
+        right_yticks=right_yticks,
+        format_str=format_str,
+        right_axis_fn=right_axis_fn)
 
 
 def loglog_om2_speed_by_ncpus(df):
@@ -58,30 +73,34 @@ def semilogx_ice_speed_per_cpu_by_ncpus(df):
     return p
 
 
-def loglog_ice_speed_by_ncpus_nbr_blocks(df):
+def loglog_ice_speed_by_ncpus_nbr_blocks(df,
+        right_yticks=[],
+        format_str="{:g}",
+        right_axis_fn=yd.plot_right_axis_yd):
     ppd.loglog_by_group("ice_nbr_blocks", "ice_speed", 
         by="om2_ncpus",
         data=df,
         xlabel="Number of CICE blocks",
         ylabel="CICE speed (d/d)",
-        legend_title="Ncpus")
+        legend_title="Ncpus",
+        right_yticks=right_yticks,
+        format_str=format_str,
+        right_axis_fn=right_axis_fn)
 
 
-def loglog_ice_speed_by_ocean_ncpus_nbr_blocks(df):
+def loglog_ice_speed_by_ocean_ncpus_nbr_blocks(df,
+        right_yticks=[],
+        format_str="{:g}",
+        right_axis_fn=yd.plot_right_axis_yd):
     ppd.loglog_by_group("ice_nbr_blocks", "ice_speed", 
         by="ocean_ncpus",
         data=df,
         xlabel="Number of CICE blocks",
         ylabel="CICE speed (d/d)",
-        legend_title="Ocean ncpus")
-    
-
-def loglog_ice_timeloop_by_ncpus_nbr_blocks(df):
-    ppd.loglog_by_group("ice_nbr_blocks", "ice_timeloop", 
-        by="om2_ncpus",
-        xlabel="Number of CICE blocks",
-        ylabel="CICE TimeLoop",
-        legend_title="Ncpus")
+        legend_title="Ocean ncpus",
+        right_yticks=right_yticks,
+        format_str=format_str,
+        right_axis_fn=right_axis_fn)
     
 
 def loglog_ice_from_ocn_by_om2_ncpus(df):
