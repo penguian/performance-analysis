@@ -89,6 +89,7 @@ def loglog_by_group(x, y, by, data,
         right_yticks=right_yticks,
         format_str=format_str)
 
+
 def semilogx_by_group(x, y, by, data,
         xlabel=None, 
         ylabel=None,
@@ -152,6 +153,34 @@ def plot_by_fn(plot_fn, x, y, data,
     return p
 
 
+def plot_by_xy_labels_fn(plot_fn, x, data,
+        xticks=[], 
+        yticks=[],
+        right_axis_fn=no_right_axis,
+        right_yticks=[],
+        format_str=default_format,
+        marker='+'):
+    if xticks == []:
+        xticks = data[x].sort_values().unique()
+    xtick_labels = [
+        str(int(tick)) for tick in xticks]
+    fig, ax = plt.subplots()
+    p = plot_fn(
+        data, 
+        marker=marker)
+    plt.xticks(xticks, xtick_labels)
+    ax.set_xticks([], minor=True)
+    if yticks != []:
+        ytick_labels = [
+            default_format.format(tick) for tick in yticks]
+        plt.yticks(yticks, ytick_labels)
+        ax.set_yticks([], minor=True)
+    right_axis = right_axis_fn(ax,
+            right_yticks=right_yticks,
+            format_str=format_str)
+    return p
+    
+
 def loglog(x, y, data,
         xlabel=None, 
         ylabel=None,
@@ -193,28 +222,3 @@ def semilogx(x, y, data,
         right_yticks=right_yticks,
         format_str=format_str)
 
-
-def plot_by_xy_labels_fn(plot_fn, x, data,
-        xticks=[], 
-        yticks=[],
-        right_axis_fn=no_right_axis,
-        right_yticks=[],
-        format_str=default_format):
-    if xticks == []:
-        xticks = data[x].sort_values().unique()
-    xtick_labels = [
-        str(int(tick)) for tick in xticks]
-    fig, ax = plt.subplots()
-    p = plot_fn(data)
-    plt.xticks(xticks, xtick_labels)
-    ax.set_xticks([], minor=True)
-    if yticks != []:
-        ytick_labels = [
-            default_format.format(tick) for tick in yticks]
-        plt.yticks(yticks, ytick_labels)
-        ax.set_yticks([], minor=True)
-    right_axis = right_axis_fn(ax,
-            right_yticks=right_yticks,
-            format_str=format_str)
-    return p
-    
