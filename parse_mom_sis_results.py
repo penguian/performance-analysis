@@ -1,16 +1,10 @@
 # parse_mom_sis_results
 
+from convert_time import seconds_per_day, seconds_per_hour
 import numpy as np
 import os
 import pandas as pd
 import sys
-from scipy.stats import norm
-
-hours_per_day = 24.0
-minutes_per_hour = 60.0
-seconds_per_minute = 60.0
-seconds_per_hour = seconds_per_minute * minutes_per_hour
-seconds_per_day = seconds_per_hour * hours_per_day
 
 
 def parse_exp_seconds(log_file_name):
@@ -54,7 +48,7 @@ def parse_exp_seconds(log_file_name):
                         parsing_hours)
     return float(
         (sum(month_days[:months]) + days) * seconds_per_day + 
-        (hours / hours_per_day) * seconds_per_hour)
+        (hours * seconds_per_hour))
 
 
 def parse_seconds_per_time_step(log_file_name):
@@ -123,7 +117,9 @@ def parse_ocean_log_file(log_file_name):
         arch_prefix)
     exp_seconds = parse_exp_seconds(log_file_name)
     result["exp_seconds"] = exp_seconds
-    result["seconds_per_time_step"] = parse_seconds_per_time_step(log_file_name)
+    seconds_per_time_step = parse_seconds_per_time_step(log_file_name)
+    result["seconds_per_time_step"] = seconds_per_time_step
+    result["nbr_time_steps"] = int(exp_seconds / seconds_per_time_step)
     rows, cols = parse_layout(log_file_name)
     result["rows"] = rows
     result["cols"] = cols
@@ -133,6 +129,9 @@ def parse_ocean_log_file(log_file_name):
     speeds = derive_speeds(times, exp_seconds)
     result.update(speeds)
     result["Ocean speed per cpu"] = result["Ocean speed"] / result["ncpus"]
+    result["ocean_time_per_step"] = result["Ocean"] / result["nbr_time_steps"]
+    result["ocean_cpu_time_per_step"] = result["ocean_time_per_step"] * result["ncpus"]
+
     return result
 
 
