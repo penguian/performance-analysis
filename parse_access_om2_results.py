@@ -151,7 +151,7 @@ def parse_om2_timestep(dir):
     return parse_int_at_end(
         dir,
         "accessom2.nml",
-        "ocean_timestep")
+        "ice_ocean_timestep")
 
 
 def parse_om2_walltime(dir):
@@ -169,17 +169,45 @@ def parse_om2_times(dir):
         -6)
 
 
+def derive_per_step(times, nbr_time_steps):
+    per_step = dict()
+    for field_name in times:
+        time = times[field_name]
+        per_step_field_name = field_name + " per step"
+        per_step[per_step_field_name] = time / nbr_time_steps
+    return per_step
+
+
+def derive_speed(times, simulated_time):
+    speed = dict()
+    for field_name in times:
+        time = times[field_name]
+        speed_field_name = field_name + " speed"
+        speed[speed_field_name] = (
+            0.0
+            if time == 0.0 else
+            float(simulated_time) / time)
+    return speed
+
+
 def parse_om2_dataframe(dir):
+    om2_ncpus = parse_om2_ncpus(dir)
+    om2_nbr_time_steps = parse_om2_nbr_time_steps(dir)
+    om2_timestep = parse_om2_timestep(dir)
+    om2_walltime = parse_om2_walltime(dir)
+    om2_simulated_time = list(
+        map(lambda x,y: x*y, om2_nbr_time_steps, om2_timestep))
+    om2_times = parse_om2_times(dir)
+    om2_per_step = map(derive_per_step, om2_times, om2_nbr_time_steps)
+    om2_speed = map(derive_speed, om2_times, om2_simulated_time)
     ice_from_ocn = parse_ice_from_ocn(dir)
     ice_nbr_blocks = parse_ice_nbr_blocks(dir)
     ice_ncpus = parse_ice_ncpus(dir)
     ice_mean_times = parse_all_mean_ice_times(dir)
+    ice_per_step = map(derive_per_step, ice_mean_times, om2_nbr_time_steps)
+    ice_speed = map(derive_speed, ice_mean_times, om2_simulated_time)
     ocean_ncpus = parse_ocean_ncpus(dir)
-    om2_nbr_time_steps = parse_om2_nbr_time_steps(dir)
-    om2_ncpus = parse_om2_ncpus(dir)
-    om2_timestep = parse_om2_timestep(dir)
-    om2_walltime = parse_om2_walltime(dir)
-    om2_times = parse_om2_times(dir)
+
 
     df = pd.DataFrame(
        list(zip(
@@ -187,38 +215,43 @@ def parse_om2_dataframe(dir):
             ice_nbr_blocks,
             ice_ncpus,
             ocean_ncpus,
-            om2_nbr_time_steps,
             om2_ncpus,
+            om2_nbr_time_steps,
             om2_timestep,
-            om2_walltime)),
+            om2_walltime,
+            om2_simulated_time)),
         columns = [
             "ice_from_ocn",
             "ice_nbr_blocks",
             "ice_ncpus",
             "ocean_ncpus",
-            "om2_nbr_time_steps",
             "om2_ncpus",
+            "om2_nbr_time_steps",
             "om2_timestep",
-            "om2_walltime"])
+            "om2_walltime",
+            "om2_simulated_time"])
 
-    df_ice_mean_times = pd.DataFrame(ice_mean_times)
-    df_om2_times = pd.DataFrame(om2_times)
-    df = pd.concat([df, df_ice_mean_times, df_om2_times], axis=1)
+    df = pd.concat([
+            df,
+            pd.DataFrame(om2_times),
+            pd.DataFrame(om2_per_step),
+            pd.DataFrame(om2_speed),
+            pd.DataFrame(ice_mean_times),
+            pd.DataFrame(ice_per_step),
+            pd.DataFrame(ice_speed)],
+            axis=1)
 
-    df["ice_time_per_step"] = df["Ice TimeLoop"] / df["om2_nbr_time_steps"]
-    df["ice_cpu_time_per_step"] = df["ice_time_per_step"] * df["ice_ncpus"]
-    df["ice_om2_cpu_time_per_step"] = df["ice_time_per_step"] * df["om2_ncpus"]
-    df["ocean_time_per_step"] = df["Ocean"] / df["om2_nbr_time_steps"]
-    df["ocean_cpu_time_per_step"] = df["ocean_time_per_step"] * df["ocean_ncpus"]
-    df["ocean_om2_cpu_time_per_step"] = df["ocean_time_per_step"] * df["om2_ncpus"]
+    df["Ice initialization"] = df["Ice Total"] - df["Ice TimeLoop"]
 
-    df["om2_simulated_time"] = df["om2_nbr_time_steps"] * df["om2_timestep"]
-    df["ice_speed"] = df["om2_simulated_time"] / df["Ice TimeLoop"]
-    df["ocean_speed"] = df["om2_simulated_time"] / df["Ocean"]
-    df["om2_speed"] = df["om2_simulated_time"] / df["om2_walltime"]
-    df["Ice speed per cpu"] = df["ice_speed"] / df["ice_ncpus"]
-    df["Ocean speed per cpu"] = df["ocean_speed"] / df["ocean_ncpus"]
-    df["OM2 speed per cpu"] = df["om2_speed"] / df["om2_ncpus"]
+    df["ice_cpu_time per step"] = df["Ice TimeLoop per step"] * df["ice_ncpus"]
+    df["ice_om2_cpu_time per step"] = df["Ice TimeLoop per step"] * df["om2_ncpus"]
+    df["ocean_cpu_time per step"] = df["Ocean per step"] * df["ocean_ncpus"]
+    df["ocean_om2_cpu_time per step"] = df["Ocean per step"] * df["om2_ncpus"]
+
+    df["Ice speed per cpu"] = df["Ice TimeLoop speed"] / df["ice_ncpus"]
+    df["Ocean speed per cpu"] = df["Ocean speed"] / df["ocean_ncpus"]
+    df["OM2 speed"] = df["om2_simulated_time"] / df["om2_walltime"]
+    df["OM2 speed per cpu"] = df["OM2 speed"] / df["om2_ncpus"]
 
     df["relative ice_from_ocn"] = df["ice_from_ocn"] / df ["Ice TimeLoop"]
     df["relative ocean_oasis_recv"] = df["oasis_recv"] / df["Ocean"]
