@@ -132,7 +132,8 @@ def parse_time_hms_at_end(text_line):
 
 
 def parse_cm2_job_output(output_file_name):
-    result = dict()
+    stats = dict()
+    times = dict()
     resource_usage_text = "Resource Usage on"
     parsing_usage = False
     with open(output_file_name, "r") as output_file:
@@ -142,18 +143,18 @@ def parse_cm2_job_output(output_file_name):
                     text_line = next(output_file)
                 parsing_usage = True
             if parsing_usage:
-                result["service_units"] = parse_float_at_end(text_line)
+                stats["service_units"] = parse_float_at_end(text_line)
                 text_line = next(output_file)
-                result["ncpus"] = parse_int_at_end(text_line)
+                stats["ncpus"] = parse_int_at_end(text_line)
                 text_line = next(output_file)
-                result["cpu_seconds"] = parse_time_hms_at_end(text_line)
+                times["cpu_seconds"] = parse_time_hms_at_end(text_line)
                 text_line = next(output_file)
-                result["memory"] = parse_bytes_at_end(text_line)
+                stats["memory"] = parse_bytes_at_end(text_line)
                 text_line = next(output_file)
-                result["walltime"] = parse_time_hms_at_end(text_line)
+                times["walltime"] = parse_time_hms_at_end(text_line)
                 text_line = next(output_file)
-                result["jobfs"] = parse_bytes_at_end(text_line)
-                return result
+                stats["jobfs"] = parse_bytes_at_end(text_line)
+                return stats, times
 
 
 def parse_atm_log_file(log_file_name):
@@ -181,24 +182,6 @@ def parse_ocn_log_file(log_file_name):
     logged["ocn_rows"] = ocn_rows
     logged["ocn_cols"] = ocn_cols
     return logged
-
-
-def parse_atm_log_file(log_file_name):
-    logged = dict()
-    omp_num_threads = parse_omp_num_threads(log_file_name)
-    logged["omp_num_threads"] = omp_num_threads
-    nbr_time_steps = parse_nbr_time_steps(log_file_name)
-    logged["nbr_time_steps"] = nbr_time_steps
-    seconds_per_time_step = parse_seconds_per_time_step(log_file_name)
-    logged["seconds_per_time_step"] = seconds_per_time_step
-    exp_seconds = nbr_time_steps * seconds_per_time_step
-    logged["exp_seconds"] = exp_seconds
-    npes, atm_rows, atm_cols = parse_atm_npes_layout(log_file_name)
-    logged["npes"] = npes
-    logged["atm_rows"] = atm_rows
-    logged["atm_cols"] = atm_cols
-    times = parse_times(log_file_name)
-    return logged, times
 
 
 def derive_proc_times(times, nproc_dict, nproc_name):
@@ -236,7 +219,7 @@ def parse_cm2_work_dir(work_dir_name):
         work_dir_name,
         "runmodel*.o[0-9]*")
     output_file_name = glob.glob(output_file_glob)[0]
-    output = parse_cm2_job_output(output_file_name)
+    output_stats, output_times = parse_cm2_job_output(output_file_name)
     
     atm_log_file_glob = os.path.join(
         work_dir_name, 
@@ -245,8 +228,6 @@ def parse_cm2_work_dir(work_dir_name):
         "atmos.fort6.pe*000")
     atm_log_file_name = glob.glob(atm_log_file_glob)[0]
     atm_log, atm_times = parse_atm_log_file(atm_log_file_name)
-    cpu_times = derive_proc_times(atm_times, output, "ncpus")
-    pe_times =  derive_proc_times(atm_times, atm_log, "npes")
     nbr_time_steps = atm_log["nbr_time_steps"]
     
     ocn_log_file_name = os.path.join(
@@ -255,32 +236,30 @@ def parse_cm2_work_dir(work_dir_name):
         "logfile.000000.out")
     ocn_log = parse_ocn_log_file(ocn_log_file_name)
 
-    times_per_time_step = derive_times_per_time_step(
-        atm_times, 
-        nbr_time_steps)
-    cpu_times_per_time_step = derive_times_per_time_step(
-        cpu_times, 
-        nbr_time_steps)
-    pe_times_per_time_step = derive_times_per_time_step(
-        pe_times, 
-        nbr_time_steps)
+    logged_times = {
+        **output_times,
+        **atm_times}
+    cpu_times = derive_proc_times(logged_times, output_stats, "ncpus")
+    pe_times =  derive_proc_times(logged_times, atm_log, "npes")
+    
     all_times = {
-        **atm_times,
+        **logged_times,
         **cpu_times,
-        **pe_times,
-        **times_per_time_step,
-        **cpu_times_per_time_step,
-        **pe_times_per_time_step}
+        **pe_times}
+    all_times_per_time_step = derive_times_per_time_step(
+        all_times, 
+        nbr_time_steps)
     
     exp_seconds = atm_log["exp_seconds"]
-    speeds = derive_speeds(atm_times, exp_seconds)
-    speeds.update(derive_speeds(cpu_times, exp_seconds))
-    speeds.update(derive_speeds(pe_times, exp_seconds))
+    speeds = derive_speeds(all_times, exp_seconds)
+
     result = {
-        **output,
+        **output_stats,
         **atm_log,
         **ocn_log,
+        **logged_times,
         **all_times,
+        **all_times_per_time_step,
         **speeds}
     return result
 
