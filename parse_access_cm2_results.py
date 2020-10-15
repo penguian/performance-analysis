@@ -1,4 +1,4 @@
-# parse_um_atmos_results
+# parse_access_cm2_results
 
 import glob
 import os
