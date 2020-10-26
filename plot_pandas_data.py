@@ -21,15 +21,16 @@ def plot_right_axis(ax, to_fn, inv_fn,
         yticks = ax.get_yticks()
         right_yticks = [
             to_fn(tick) for tick in yticks]
-    right_ytick_labels = [
-        format_str.format(tick) for tick in right_yticks]
     right_axis.set_yticks([], minor=True)
     right_axis.set_yticks(right_yticks, minor=False)
-    right_axis.set_yticklabels(right_ytick_labels)
+    right_ytick_labels = [
+        format_str.format(tick) for tick in right_yticks]
+    right_axis.set_yticklabels(right_ytick_labels, minor=False)
     return right_axis
 
 
 def plot_by_fn_by_group(plot_fn, x, y, by, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -39,8 +40,9 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
         right_axis_fn=no_right_axis,
         right_yticks=[],
         format_str=default_format):
+    if ax is None:
+        fig, ax = plt.subplots()
     dgb = data.groupby(by)
-    fig, ax = plt.subplots()
     for name, group in dgb:
         means = group.groupby(x)[y].mean()
         p = plot_fn(means, marker='')
@@ -57,21 +59,23 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
         xticks = data[x].sort_values().unique()
     xtick_labels = [
         str(int(tick)) for tick in xticks]
-    plt.xticks(xticks, xtick_labels, rotation=90)
     ax.set_xticks([], minor=True)
+    plt.xticks(xticks, xtick_labels, rotation=90)
     if yticks != []:
         ytick_labels = [
             default_format.format(tick) for tick in yticks]
         plt.yticks(yticks, ytick_labels)
-    right_axis = right_axis_fn(ax,
-        right_yticks=right_yticks,
-        format_str=format_str)
+    if right_axis_fn != no_right_axis:
+        right_axis = right_axis_fn(ax,
+            right_yticks=right_yticks,
+            format_str=format_str)
     plt.xlabel(x if xlabel == None else xlabel)
     plt.ylabel(y if ylabel == None else ylabel)
     plt.legend(title=legend_title)
 
 
 def loglog_by_group(x, y, by, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -83,6 +87,7 @@ def loglog_by_group(x, y, by, data,
         format_str=default_format):
     return plot_by_fn_by_group(
         plt.loglog, x, y, by, data,
+        ax=ax,
         xlabel=xlabel, 
         ylabel=ylabel,
         xticks=xticks,
@@ -95,6 +100,7 @@ def loglog_by_group(x, y, by, data,
 
 
 def semilogx_by_group(x, y, by, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -106,6 +112,7 @@ def semilogx_by_group(x, y, by, data,
         format_str=default_format):
     return plot_by_fn_by_group(
         plt.semilogx, x, y, by, data,
+        ax=ax,
         xlabel=xlabel, 
         ylabel=ylabel,
         xticks=xticks,
@@ -118,6 +125,7 @@ def semilogx_by_group(x, y, by, data,
 
 
 def plot_by_fn(plot_fn, x, y, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -126,9 +134,7 @@ def plot_by_fn(plot_fn, x, y, data,
         right_axis_fn=no_right_axis,
         right_yticks=[],
         format_str=default_format):
-    if (xticks != [] or 
-        yticks != [] or 
-        right_axis_fn != no_right_axis):
+    if ax is None:
         fig, ax = plt.subplots()
     means = data.groupby(x)[y].mean()
     p = plot_fn(means, marker='')
@@ -143,11 +149,11 @@ def plot_by_fn(plot_fn, x, y, data,
     if xticks != []:
         xtick_labels = [
             str(int(tick)) for tick in xticks]
-        plt.xticks(xticks, xtick_labels)
         ax.set_xticks([], minor=True)
+        plt.xticks(xticks, xtick_labels, rotation=90)
     if yticks != []:
         ytick_labels = [
-            default_format.format(tick) for tick in yticks]
+            format_str.format(tick) for tick in yticks]
         plt.yticks(yticks, ytick_labels)
         ax.set_yticks([], minor=True)
     if right_axis_fn != no_right_axis:
@@ -160,34 +166,37 @@ def plot_by_fn(plot_fn, x, y, data,
 
 
 def plot_by_xy_labels_fn(plot_fn, x, data,
+        ax=None,
         xticks=[], 
         yticks=[],
         right_axis_fn=no_right_axis,
         right_yticks=[],
         format_str=default_format,
         marker='+'):
+    if ax is None:
+        fig, ax = plt.subplots()
+    p = plot_fn(
+        data,
+        ax=ax,
+        right_axis_fn=right_axis_fn,
+        right_yticks=right_yticks,
+        marker=marker)
     if xticks == []:
         xticks = data[x].sort_values().unique()
     xtick_labels = [
         str(int(tick)) for tick in xticks]
-    fig, ax = plt.subplots()
-    p = plot_fn(
-        data, 
-        marker=marker)
-    plt.xticks(xticks, xtick_labels)
     ax.set_xticks([], minor=True)
+    plt.xticks(xticks, xtick_labels, rotation=90)
     if yticks != []:
         ytick_labels = [
             default_format.format(tick) for tick in yticks]
         plt.yticks(yticks, ytick_labels)
         ax.set_yticks([], minor=True)
-    right_axis = right_axis_fn(ax,
-            right_yticks=right_yticks,
-            format_str=format_str)
     return p
     
 
 def loglog(x, y, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -198,6 +207,7 @@ def loglog(x, y, data,
         format_str=default_format):
     return plot_by_fn(
         plt.loglog, x, y, data,
+        ax=ax,
         xlabel=xlabel, 
         ylabel=ylabel, 
         xticks=xticks, 
@@ -209,6 +219,7 @@ def loglog(x, y, data,
 
 
 def semilogx(x, y, data,
+        ax=None,
         xlabel=None, 
         ylabel=None,
         xticks=[],
@@ -219,6 +230,7 @@ def semilogx(x, y, data,
         format_str=default_format):
     return plot_by_fn(
         plt.semilogx, x, y, data,
+        ax=ax,
         xlabel=xlabel, 
         ylabel=ylabel, 
         xticks=xticks, 
