@@ -107,28 +107,39 @@ def parse_ocn_npes_layout(log_file_name):
                 return ocn_npes, ocn_rows, ocn_cols
 
 
-def parse_bytes_at_end(text_line):
-    words = text_line.strip().split()
+def parse_bytes_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
     return words[-1]
 
 
-def parse_float_at_end(text_line):
-    words = text_line.strip().split()
+def parse_float_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
     return float(words[-1])
 
 
-def parse_int_at_end(text_line):
-    words = text_line.strip().split()
+def parse_int_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
     return int(words[-1])
 
 
-def parse_time_hms_at_end(text_line):
-    words = text_line.strip().split()
+def parse_time_hms_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
     hms = words[-1].split(':')
     h = int(hms[0])
     m = int(hms[1])
     s = float(hms[2])
     return h * 3600.0 + m * 60.0 + s
+
+
+def parse_cm2_job_error(error_file_name):
+    stats = dict()
+    nslots_text = "export NSLOTS="
+    with open(error_file_name, "r") as error_file:
+        for text_line in error_file:
+            if nslots_text in text_line:
+                stats["npes_per_node"] = parse_int_at_end(text_line, sep='=')
+                text_line = next(error_file)
+                return stats
 
 
 def parse_cm2_job_output(output_file_name):
@@ -215,9 +226,15 @@ def derive_speeds(times, exp_seconds):
 
 
 def parse_cm2_work_dir(work_dir_name):
+    error_file_glob = os.path.join(
+        work_dir_name,
+        "runmodel*.e[0-9]*[0-9]")
+    error_file_name = glob.glob(error_file_glob)[0]
+    error_stats = parse_cm2_job_error(error_file_name)
+    
     output_file_glob = os.path.join(
         work_dir_name,
-        "runmodel*.o[0-9]*")
+        "runmodel*.o[0-9]*[0-9]")
     output_file_name = glob.glob(output_file_glob)[0]
     output_stats, output_times = parse_cm2_job_output(output_file_name)
     
@@ -254,6 +271,7 @@ def parse_cm2_work_dir(work_dir_name):
     speeds = derive_speeds(all_times, exp_seconds)
 
     result = {
+        **error_stats,
         **output_stats,
         **atm_log,
         **ocn_log,
