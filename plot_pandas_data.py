@@ -74,54 +74,14 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
     plt.legend(title=legend_title)
 
 
-def loglog_by_group(x, y, by, data,
-        ax=None,
-        xlabel=None, 
-        ylabel=None,
-        xticks=[],
-        yticks=[],
-        legend_title=None,
-        marker='+',
-        right_axis_fn=no_right_axis,
-        right_yticks=[],
-        format_str=default_format):
+def loglog_by_group(x, y, by, data, **kwargs):
     return plot_by_fn_by_group(
-        plt.loglog, x, y, by, data,
-        ax=ax,
-        xlabel=xlabel, 
-        ylabel=ylabel,
-        xticks=xticks,
-        yticks=yticks,
-        legend_title=legend_title,
-        marker=marker,
-        right_axis_fn=right_axis_fn,
-        right_yticks=right_yticks,
-        format_str=format_str)
+        plt.loglog, x, y, by, data, **kwargs)
 
 
-def semilogx_by_group(x, y, by, data,
-        ax=None,
-        xlabel=None, 
-        ylabel=None,
-        xticks=[],
-        yticks=[],
-        legend_title=None,
-        marker='+',
-        right_axis_fn=no_right_axis,
-        right_yticks=[],
-        format_str=default_format):
+def semilogx_by_group(x, y, by, data, **kwargs):
     return plot_by_fn_by_group(
-        plt.semilogx, x, y, by, data,
-        ax=ax,
-        xlabel=xlabel, 
-        ylabel=ylabel,
-        xticks=xticks,
-        yticks=yticks,
-        legend_title=legend_title,
-        marker=marker,
-        right_axis_fn=right_axis_fn,
-        right_yticks=right_yticks,
-        format_str=format_str)
+        plt.semilogx, x, y, by, data, **kwargs)
 
 
 def plot_by_fn(plot_fn, x, y, data,
@@ -195,48 +155,12 @@ def plot_by_xy_labels_fn(plot_fn, x, data,
     return p
     
 
-def loglog(x, y, data,
-        ax=None,
-        xlabel=None, 
-        ylabel=None,
-        xticks=[],
-        yticks=[],
-        marker='+',
-        right_axis_fn=no_right_axis,
-        right_yticks=[],
-        format_str=default_format):
+def loglog(x, y, data, **kwargs):
     return plot_by_fn(
-        plt.loglog, x, y, data,
-        ax=ax,
-        xlabel=xlabel, 
-        ylabel=ylabel, 
-        xticks=xticks, 
-        yticks=yticks, 
-        marker=marker,
-        right_axis_fn=right_axis_fn,
-        right_yticks=right_yticks,
-        format_str=format_str)
+        plt.loglog, x, y, data, **kwargs)
 
 
-def semilogx(x, y, data,
-        ax=None,
-        xlabel=None, 
-        ylabel=None,
-        xticks=[],
-        yticks=[],
-        marker='+',
-        right_axis_fn=no_right_axis,
-        right_yticks=[],
-        format_str=default_format):
+def semilogx(x, y, data, **kwargs):
     return plot_by_fn(
-        plt.semilogx, x, y, data,
-        ax=ax,
-        xlabel=xlabel, 
-        ylabel=ylabel, 
-        xticks=xticks, 
-        yticks=yticks, 
-        marker=marker,
-        right_axis_fn=right_axis_fn,
-        right_yticks=right_yticks,
-        format_str=format_str)
+        plt.semilogx, x, y, data, **kwargs)
 
