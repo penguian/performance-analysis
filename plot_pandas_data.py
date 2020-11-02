@@ -29,6 +29,14 @@ def plot_right_axis(ax, to_fn, inv_fn,
     return right_axis
 
 
+def plot_caption(
+        fig_nbr=0, 
+        caption=None):
+    if caption is not None:
+        figtext = f"Figure {fig_nbr}: {caption}"
+        plt.figtext(0.5, -0.2, figtext, ha="center", fontsize="large")
+
+
 def plot_by_fn_by_group(plot_fn, x, y, by, data,
         ax=None,
         xlabel=None, 
@@ -39,7 +47,9 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
         marker='+',
         right_axis_fn=no_right_axis,
         right_yticks=[],
-        format_str=default_format):
+        format_str=default_format,
+        fig_nbr=0,
+        caption=None):
     if ax is None:
         fig, ax = plt.subplots()
     dgb = data.groupby(by)
@@ -72,6 +82,7 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
     plt.xlabel(x if xlabel == None else xlabel)
     plt.ylabel(y if ylabel == None else ylabel)
     plt.legend(title=legend_title)
+    plot_caption(fig_nbr, caption)
 
 
 def loglog_by_group(x, y, by, data, **kwargs):
@@ -93,7 +104,9 @@ def plot_by_fn(plot_fn, x, y, data,
         marker='+',
         right_axis_fn=no_right_axis,
         right_yticks=[],
-        format_str=default_format):
+        format_str=default_format,
+        fig_nbr=0,
+        caption=None):
     if ax is None:
         fig, ax = plt.subplots()
     means = data.groupby(x)[y].mean()
@@ -122,6 +135,7 @@ def plot_by_fn(plot_fn, x, y, data,
             format_str=format_str)
     plt.xlabel(x if xlabel == None else xlabel)
     plt.ylabel(y if ylabel == None else ylabel)
+    plot_caption(fig_nbr, caption)
     return p
 
 
@@ -132,7 +146,9 @@ def plot_by_xy_labels_fn(plot_fn, x, data,
         right_axis_fn=no_right_axis,
         right_yticks=[],
         format_str=default_format,
-        marker='+'):
+        marker='+',
+        fig_nbr=0,
+        caption=None):
     if ax is None:
         fig, ax = plt.subplots()
     p = plot_fn(
@@ -152,6 +168,7 @@ def plot_by_xy_labels_fn(plot_fn, x, data,
             default_format.format(tick) for tick in yticks]
         plt.yticks(yticks, ytick_labels)
         ax.set_yticks([], minor=True)
+    plot_caption(fig_nbr, caption)
     return p
     
 
