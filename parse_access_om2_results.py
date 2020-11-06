@@ -10,9 +10,10 @@ def output_dirs(dir):
     return glob.glob(output_glob_str)
 
 
+access_om2_filename = "access-om2.out"
+config_filename = "config.yaml"
 ice_diag_filename = os.path.join("ice", "ice_diag.d")
 ocean_log_filename = os.path.join("ocean", "logfile.000000.out")
-access_om2_filename = "access-om2.out"
 
 
 def parse_int_at_end(top_dir, filename, pattern):
@@ -126,6 +127,13 @@ def parse_ice_ncpus(dir):
         "Processors")
 
 
+def parse_nodesize(dir):
+    return parse_int_at_end(
+        dir,
+        "config.yaml",
+        "nodesize:")
+
+
 def parse_ocean_ncpus(dir):
     return parse_int_at_end(
         dir,
@@ -191,6 +199,7 @@ def derive_speed(times, simulated_time):
 
 
 def parse_om2_dataframe(dir):
+    nodesize = parse_nodesize(dir)
     om2_ncpus = parse_om2_ncpus(dir)
     om2_nbr_time_steps = parse_om2_nbr_time_steps(dir)
     om2_timestep = parse_om2_timestep(dir)
@@ -211,6 +220,7 @@ def parse_om2_dataframe(dir):
 
     df = pd.DataFrame(
        list(zip(
+            nodesize,
             ice_from_ocn,
             ice_nbr_blocks,
             ice_ncpus,
@@ -221,6 +231,7 @@ def parse_om2_dataframe(dir):
             om2_walltime,
             om2_simulated_time)),
         columns = [
+            "nodesize",
             "ice_from_ocn",
             "ice_nbr_blocks",
             "ice_ncpus",
