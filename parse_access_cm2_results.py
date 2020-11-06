@@ -5,6 +5,30 @@ import os
 import pandas as pd
 
 
+def parse_bytes_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
+    return words[-1]
+
+
+def parse_float_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
+    return float(words[-1])
+
+
+def parse_int_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
+    return int(words[-1])
+
+
+def parse_time_hms_at_end(text_line, sep=' '):
+    words = text_line.strip().split(sep)
+    hms = words[-1].split(':')
+    h = int(hms[0])
+    m = int(hms[1])
+    s = float(hms[2])
+    return h * 3600.0 + m * 60.0 + s
+
+
 def parse_omp_num_threads(log_file_name):
     threads_text = "I am running with"
     with open(log_file_name, "r") as log_file:
@@ -48,15 +72,15 @@ def parse_atm_npes_layout(log_file_name):
         for text_line in log_file:
             if npes_layout_text in text_line:
                 layout_text_beg = text_line.find(' ') + 1
-                npes = int(text_line[:layout_text_beg].strip())
+                atm_npes = int(text_line[:layout_text_beg].strip())
                 layout_beg = layout_text_beg + len(npes_layout_text)
                 layout = text_line[layout_beg:].split('x')
                 atm_rows = int(layout[0].strip())
                 atm_cols = int(layout[1].strip())
-                return npes, atm_rows, atm_cols
+                return atm_npes, atm_rows, atm_cols
 
 
-def parse_times(log_file_name):
+def parse_atm_times(log_file_name):
     field_name_len = 20
     field_value_len = 14
     parsing_times = False
@@ -81,20 +105,6 @@ def parse_times(log_file_name):
     return times
 
 
-def parse_atm_npes_layout(log_file_name):
-    npes_layout_text = "processors in atmosphere configuration"
-    with open(log_file_name, "r") as log_file:
-        for text_line in log_file:
-            if npes_layout_text in text_line:
-                layout_text_beg = text_line.find(' ') + 1
-                npes = int(text_line[:layout_text_beg].strip())
-                layout_beg = layout_text_beg + len(npes_layout_text)
-                layout = text_line[layout_beg:].split('x')
-                atm_rows = int(layout[0].strip())
-                atm_cols = int(layout[1].strip())
-                return npes, atm_rows, atm_cols
-
-
 def parse_ocn_npes_layout(log_file_name):
     layout_text = "mom_domain domain decomposition:"
     with open(log_file_name, "r") as log_file:
@@ -107,28 +117,19 @@ def parse_ocn_npes_layout(log_file_name):
                 return ocn_npes, ocn_rows, ocn_cols
 
 
-def parse_bytes_at_end(text_line, sep=' '):
-    words = text_line.strip().split(sep)
-    return words[-1]
-
-
-def parse_float_at_end(text_line, sep=' '):
-    words = text_line.strip().split(sep)
-    return float(words[-1])
-
-
-def parse_int_at_end(text_line, sep=' '):
-    words = text_line.strip().split(sep)
-    return int(words[-1])
-
-
-def parse_time_hms_at_end(text_line, sep=' '):
-    words = text_line.strip().split(sep)
-    hms = words[-1].split(':')
-    h = int(hms[0])
-    m = int(hms[1])
-    s = float(hms[2])
-    return h * 3600.0 + m * 60.0 + s
+def parse_ocn_times(log_file_name):
+    field_name_len = 32
+    parsing_times = False
+    times = dict()
+    with open(log_file_name, "r") as log_file:
+        for text_line in log_file:
+            if text_line.startswith("Total runtime"):
+                parsing_times = True
+            if parsing_times:
+                field_name = text_line[:field_name_len].strip()
+                field_value = parse_float_at_end(text_line)
+                times[field_name] = field_value
+    return times
 
 
 def parse_cm2_job_error(error_file_name):
@@ -178,11 +179,11 @@ def parse_atm_log_file(log_file_name):
     logged["seconds_per_time_step"] = seconds_per_time_step
     exp_seconds = nbr_time_steps * seconds_per_time_step
     logged["exp_seconds"] = exp_seconds
-    npes, atm_rows, atm_cols = parse_atm_npes_layout(log_file_name)
-    logged["npes"] = npes
+    atm_npes, atm_rows, atm_cols = parse_atm_npes_layout(log_file_name)
+    logged["atm_npes"] = atm_npes
     logged["atm_rows"] = atm_rows
     logged["atm_cols"] = atm_cols
-    times = parse_times(log_file_name)
+    times = parse_atm_times(log_file_name)
     return logged, times
 
 
@@ -192,7 +193,8 @@ def parse_ocn_log_file(log_file_name):
     logged["ocn_npes"] = ocn_npes
     logged["ocn_rows"] = ocn_rows
     logged["ocn_cols"] = ocn_cols
-    return logged
+    times = parse_ocn_times(log_file_name)
+    return logged, times
 
 
 def derive_proc_times(times, nproc_dict, nproc_name):
@@ -251,18 +253,21 @@ def parse_cm2_work_dir(work_dir_name):
         work_dir_name, 
         "OCN_RUNDIR",
         "logfile.000000.out")
-    ocn_log = parse_ocn_log_file(ocn_log_file_name)
+    ocn_log, ocn_times, = parse_ocn_log_file(ocn_log_file_name)
 
     logged_times = {
         **output_times,
-        **atm_times}
+        **atm_times,
+        **ocn_times}
     cpu_times = derive_proc_times(logged_times, output_stats, "ncpus")
-    pe_times =  derive_proc_times(logged_times, atm_log, "npes")
+    atm_pe_times =  derive_proc_times(logged_times, atm_log, "atm_npes")
+    ocn_pe_times =  derive_proc_times(logged_times, ocn_log, "ocn_npes")
     
     all_times = {
         **logged_times,
         **cpu_times,
-        **pe_times}
+        **atm_pe_times,
+        **ocn_pe_times}
     all_times_per_time_step = derive_times_per_time_step(
         all_times, 
         nbr_time_steps)
@@ -275,7 +280,6 @@ def parse_cm2_work_dir(work_dir_name):
         **output_stats,
         **atm_log,
         **ocn_log,
-        **logged_times,
         **all_times,
         **all_times_per_time_step,
         **speeds}
