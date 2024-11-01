@@ -32,6 +32,7 @@ def plot_right_axis(ax, to_fn, inv_fn,
 def plot_by_fn_by_group(plot_fn, x, y, by, data,
         xlabel=None, 
         ylabel=None,
+        xticks=[],
         yticks=[],
         legend_title=None,
         marker='+',
@@ -52,10 +53,11 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
             label=str(name))
     if plot_fn == plt.semilogx:
         plt.ylim([0, data[y].max() * 1.1])
-    xticks = data[x].sort_values().unique()
+    if xticks == []:
+        xticks = data[x].sort_values().unique()
     xtick_labels = [
         str(int(tick)) for tick in xticks]
-    plt.xticks(xticks, xtick_labels)
+    plt.xticks(xticks, xtick_labels, rotation=90)
     ax.set_xticks([], minor=True)
     if yticks != []:
         ytick_labels = [
@@ -72,6 +74,7 @@ def plot_by_fn_by_group(plot_fn, x, y, by, data,
 def loglog_by_group(x, y, by, data,
         xlabel=None, 
         ylabel=None,
+        xticks=[],
         yticks=[],
         legend_title=None,
         marker='+',
@@ -82,6 +85,7 @@ def loglog_by_group(x, y, by, data,
         plt.loglog, x, y, by, data,
         xlabel=xlabel, 
         ylabel=ylabel,
+        xticks=xticks,
         yticks=yticks,
         legend_title=legend_title,
         marker=marker,
@@ -93,6 +97,7 @@ def loglog_by_group(x, y, by, data,
 def semilogx_by_group(x, y, by, data,
         xlabel=None, 
         ylabel=None,
+        xticks=[],
         yticks=[],
         legend_title=None,
         marker='+',
@@ -103,6 +108,7 @@ def semilogx_by_group(x, y, by, data,
         plt.semilogx, x, y, by, data,
         xlabel=xlabel, 
         ylabel=ylabel,
+        xticks=xticks,
         yticks=yticks,
         legend_title=legend_title,
         marker=marker,
